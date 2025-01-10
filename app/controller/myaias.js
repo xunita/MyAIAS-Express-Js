@@ -23,7 +23,7 @@ const askMyAIAS = async (data, res) => {
     .create(
       {
         model: deployment,
-        max_tokens: TOKEN_LIMIT,
+        max_tokens: data.modelSettings.maxTokens || TOKEN_LIMIT,
         messages: [data.systemPrompt, ...data.prompts],
         temperature: 0.7,
         stream: true
