@@ -2,7 +2,7 @@
 const { AzureOpenAI } = require('openai')
 // logger
 const { getLogger } = require('../../logger/config')
-const { /* systemPrompt */ TOKEN_LIMIT } = require('../../constants/ai')
+const { /* systemPrompt */ TOKEN_LIMIT, systemPromptAdditon } = require('../../constants/ai')
 const { sleepMyAIAS } = require('../../utils/utils')
 const { logger } = getLogger()
 //
@@ -15,6 +15,8 @@ const askMyAIAS = async (data, res) => {
 
   const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment })
   // console.log(data)
+  data.systemPrompt.content[0].text = `${data.systemPrompt.content[0].text}\n\n${systemPromptAdditon}`
+  //
   client.chat.completions
     .create({
       model: deployment,

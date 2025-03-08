@@ -18,9 +18,13 @@ const systemPrompt = {
   ]
 }
 
+const systemPromptAdditon =
+  'Use html tags to format your response, always add space between title, paragraph, etc..., not just going next line, there must be real noticable space, title must be big but not too big, it must still be noticable (this is imperative), and use the user language'
+
 const TOKEN_LIMIT = 800
 
 module.exports = {
   systemPrompt,
-  TOKEN_LIMIT
+  TOKEN_LIMIT,
+  systemPromptAdditon
 }
