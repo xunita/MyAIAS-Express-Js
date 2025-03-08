@@ -7,10 +7,6 @@ const { sleepMyAIAS } = require('../../utils/utils')
 const { logger } = getLogger()
 //
 const askMyAIAS = async (data, res) => {
-  // Set headers for streaming response to the client
-  res.setHeader('Content-Type', 'text/event-stream') // Server-sent events
-  res.setHeader('Cache-Control', 'no-cache')
-  res.setHeader('Connection', 'keep-alive')
   //
   const endpoint = data.modelSettings.endpoint
   const apiKey = data.modelSettings.apiKey
@@ -20,39 +16,49 @@ const askMyAIAS = async (data, res) => {
   const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment })
   // console.log(data)
   client.chat.completions
-    .create(
-      {
-        model: deployment,
-        max_tokens: data.modelSettings.maxTokens || TOKEN_LIMIT,
-        messages: [data.systemPrompt, ...data.prompts],
-        temperature: 0.7,
-        stream: true
-      },
-      { responseType: 'stream' } //
-    )
+    .create({
+      model: deployment,
+      max_tokens: data.modelSettings.maxTokens || TOKEN_LIMIT,
+      messages: [data.systemPrompt, ...data.prompts],
+      temperature: 0.7,
+      stream: data.modelSettings.stream ?? true
+    })
     .then(async (response) => {
       let fullResponse = '' //
-
-      for await (const chunk of response) {
-        //
-        const choice = chunk.choices[0] //
-        if (choice && choice.delta && choice.delta.content) {
-          const assistantText = choice.delta.content
-          logger.info(`Received chunk: ${assistantText}`) // Log the chunk
-          // Send the chunk to the client
-          res.write(`data: [CHUNK]${assistantText}`)
-          fullResponse += assistantText //
-          await sleepMyAIAS(100) // Simulate processing time
+      // Set headers for streaming response to the client if stream is enabled
+      if (data.modelSettings.stream) {
+        res.setHeader('Content-Type', 'text/event-stream') // Server-sent events
+        res.setHeader('Cache-Control', 'no-cache')
+        res.setHeader('Connection', 'keep-alive')
+        for await (const chunk of response) {
+          //
+          const choice = chunk.choices[0] //
+          if (choice && choice.delta && choice.delta.content) {
+            const assistantText = choice.delta.content
+            if (data.modelSettings.stream) {
+              // Send the chunk to the client
+              res.write(`${assistantText}`)
+              await sleepMyAIAS(75) // Simulate processing time
+            }
+            fullResponse += assistantText //
+          }
         }
+        res.end() // End the stream
+      } else {
+        // If the stream is not enabled, send the full response to the client
+        fullResponse = response.choices[0].message.content
+        res.status(200).json({ message: response.choices[0].message.content })
       }
-      res.write(`data: [STREAM END]`)
-      res.end() //
       // log the full response
       logger.info(`Full response if any: ${fullResponse}`)
     })
     .catch((error) => {
-      res.write(`data: [ERROR]${error.message}`)
-      res.end() //
+      if (data.modelSettings.stream) {
+        res.write(`data: [ERROR]${error.message}`)
+        res.end() //
+      } else {
+        res.status(200).json({ error: error.message })
+      }
       logger.error(`Error in stream: ${error.message}`)
     })
 }
