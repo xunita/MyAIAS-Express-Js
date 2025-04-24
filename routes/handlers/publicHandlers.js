@@ -1,5 +1,6 @@
+const { getMjAi } = require('../../app/controller/mjai')
 const { askMyAIAS } = require('../../app/controller/myaias')
-const { getNstAi, getNstR1Ai } = require('../../app/controller/nstai')
+const { getNstAi } = require('../../app/controller/nstai')
 
 const askMe = async (req, res) => {
   askMyAIAS(req.body, res)
@@ -7,6 +8,10 @@ const askMe = async (req, res) => {
 
 const nstAI = async (req, res) => {
   getNstAi(req.body, res)
+}
+
+const mjAI = async (req, res) => {
+  getMjAi(req.body, res)
 }
 
 // Home
@@ -17,5 +22,6 @@ const homeHandler = (req, res) => {
 module.exports = {
   homeHandler,
   askMe,
-  nstAI
+  nstAI,
+  mjAI
 }
